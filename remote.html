@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta charset="utf-8">
+        <title>Remote <E2><96><BA> Dailymotion</title>
+        <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+        <style type="text/css">
+        .header {
+            position: fixed;
+            z-index: 5;
+            width: 100%;
+            padding: 10px 0;
+            font-size: 20px;
+            background-color: #00669d;
+            color: #fff;
+        }
+        .media-list {
+            margin-top: 48px;
+            margin-bottom: 86px;
+        }
+        .media {
+            position: relative;
+            padding: 10px 15px;
+            margin-top: 0;
+        }
+        .media.active {
+            color: #0079b8;
+            background-color: #e9e9e9;
+        }
+        .media .media-img {
+            position: relative;
+        }
+        .media .badge {
+            position: absolute;
+            bottom: 7px;
+            left: 10px;
+            font-weight: normal;
+            background-color: rgba(0,0,0,0.5);
+            border-radius: 3px;
+        }
+        .media .media-img img {
+            width: 210px;
+            height: 117px;
+        }
+        .media .overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            padding: 10px;
+            padding-top: 0;
+            background-color: #222;
+            color: #fff;
+        }
+        .footer h5 {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        </style>
+    </head>
+
+    <body>
+
+
+    <div class="container-fluid" id="fago">Si tu vois <C3><A7>a, c'est que tu dois rentrer le maudit code</div>
+
+    <p class="mrg-top-lg">Life is my playground<E2><84><A2><p>
+
+    <script src="http://fb.me/react-0.10.0.js"></script>
+    <script src="http://fb.me/JSXTransformer-0.10.0.js"></script>
+    <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+    <script src="/js/remote/remote.js"></script>
+    <script>
+    var peer_id = prompt('Enter your code, Dude!');
+    var co;
+    var VIDEOS, PLAYLIST_NAME, VIDEO_ACTIVE;
+    if (peer_id) {
+        remote.init(peer_id, function() {
+            remote.onReceiveState(function(state) {
+                if (state.videoList) {
+                    VIDEOS = state.videoList;
+                    PLAYLIST_NAME = state.playlistName;
+                    co = React.renderComponent(
+                        ControllableVideoTable({videos: VIDEOS, videoActive: state.activeVideo, playlistName: PLAYLIST_NAME}),
+                        document.getElementById('fago')
+                        );
+                }
+                if (state.activeVideo) {
+                    if (co) {
+                        videoId = state.activeVideo.id;
+                        co.setState({
+                            id: videoId,
+                            playing: true
+                        });
+                    }
+                    // console.log(state.activeVideo);
+                    // VIDEO_ACTIVE = state.activeVideo;
+                    // React.renderComponent(
+                    //     ControllableVideoTable({videos: VIDEOS, videoActive: state.activeVideo, playlistName: PLAYLIST_NAME}),
+                    //     document.getElementById('fago')
+                    //     );
+                }
+            });
+        });
+    }
+    // remote.init(window.location.search.match(/peer_id=(.+)/)[1]);
+    </script>
+    <script type="text/jsx">
+    /**
+    * @jsx React.DOM
+    */
+    var VideoRow = React.createClass({
+        render: function() {
+            return (
+                <li className={'media ' + (this.props.active ? 'active' : '')} onClick={this.props.onVideoClick} data-ui-component='video-row'>
+                    <div className='pull-left media-img'>
+                        <span className='badge'>{this.props.duration}</span>
+                        <div className={this.props.active ? 'overlay' : ''}></div>
+                        <img className='media-object' src={this.props.url} />
+                    </div>
+                    <div className='media-body'>
+                        <h3 className='media-heading'>{this.props.title}</h3>
+                        {this.props.owner}
+                    </div>
+                </li>
+            );
+        }
+    });
+
+    var VideoTable = React.createClass({
+        onVideoClick: function(videoId)
+        {
+            return (function() {
+                this.props.onVideoClick(videoId);
+            }).bind(this);
+        },
+        render: function() {
+            var rows = [];
+            var videoActive = this.props.videoActive;
+            var onVideoClick = this.onVideoClick;
+            this.props.videos.forEach(function(video) {
+                rows.push(<VideoRow
+                    onVideoClick={onVideoClick(video.id)}
+                    title={video.title}
+                    owner={video.owner}
+                    active={video.id === videoActive.id}
+                    url={video.previewUrl}
+                    duration={video.duration}
+                    playing={videoActive.playing} />);
+            });
+            return (
+                <ul className='media-list' data-ui-component='video-table'>
+                    {rows}
+                </ul>
+            );
+        }
+    });
+
+    var ControlBar = React.createClass({
+        onSeek: function() {
+            this.props.onSeek(parseInt(this.refs.seekBar.getDOMNode().value, 10));
+        },
+        render: function() {
+            var controlButton =
+                <span className={'glyphicon glyphicon-' + (this.props.isPlaying ? 'pause' : 'play')} onClick={this.props.handleClick}></span>;
+            var slider =  <input type='range' min='0' max='100' value={this.props.progress} onChange={this.onSeek} ref='seekBar' />;
+            return (
+                <div className='footer' data-ui-component='control-bar'>
+                    <h5 className='text-center'>{this.props.title}</h5>
+                    <div className='text-center h1 row'>
+                        <div className='col-xs-4'>
+                            <span className='glyphicon glyphicon-step-backward' onClick={this.props.handlePrev}></span>
+                        </div>
+                        <div className='col-xs-4'>{controlButton}</div>
+                        <div className='col-xs-4'>
+                            <span className='glyphicon glyphicon-step-forward' onClick={this.props.handleNext}></span>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+    });
+
+    var ControllableVideoTable = React.createClass({
+        getInitialState: function() {
+            return {
+                id: this.props.videoActive.id,
+                playing: this.props.videoActive.playing,
+                progress: this.props.videoActive.progress
+            };
+        },
+        getVideoTitle: function() {
+            var videos = this.props.videos;
+            for (var i = 0; i < videos.length; i++) {
+                if (this.state.id === videos[i].id) {
+                    this.prevId = (i > 0 ? videos[i - 1].id : null);
+                    this.nextId = (i < videos.length - 1 ? videos[i + 1].id : null);
+                    return videos[i].title;
+                }
+            };
+            return null;
+        },
+        tick: function() {
+            var progress = this.state.progress;
+            if (progress == 99) {
+                clearInterval(this.interval);
+            }
+            var isPlaying = this.state.playing;
+            if (isPlaying) {
+                this.setState({
+                    progress: progress + 1
+                });
+            }
+        },
+        componentDidMount: function() {
+            // this.interval = setInterval(this.tick, 1000);
+        },
+        onSeek: function(value) {
+            this.setState({
+                progress: value
+            });
+        },
+        onControlClick: function() {
+            var videoId = this.state.id;
+            this.setState({
+                id: videoId ? videoId : this.props.videos[0].id,
+                playing: videoId ? !this.state.playing : true,
+                progress: videoId ? this.state.progress : 0
+            });
+            if (videoId) {
+                var action = this.state.playing ? 'pauseVideo' : 'playVideo';
+                remote.playerCall(action);
+            }
+        },
+        onPrev: function() {
+            if (this.prevId !== null) {
+                this.setState({
+                    id: this.prevId,
+                    progress: 0
+                });
+                remote.playerCall('setActiveVideo', this.prevId);
+            }
+        },
+        onNext: function() {
+            if (this.nextId !== null) {
+                this.setState({
+                    id: this.nextId,
+                    progress: 0
+                });
+                remote.playerCall('setActiveVideo', this.nextId);
+            }
+        },
+        onVideoClick: function(videoId) {
+            this.setState({
+                id: videoId,
+                playing: videoId === this.state.id ? !this.state.playing : true,
+                progress: videoId === this.state.id ? this.state.progress : 0
+            });
+            remote.playerCall('setActiveVideo', videoId);
+        },
+        render: function() {
+            var isPlaying = typeof this.state.playing != 'undefined' ? this.state.playing : false;
+            var progress = typeof this.state.progress != 'undefined' ? this.state.progress : 0;
+            return (
+                <div className='row'>
+                    <div className='header text-center'>{this.props.playlistName}</div>
+                    <VideoTable onVideoClick={this.onVideoClick} videos={this.props.videos} videoActive={this.state} />
+                    <ControlBar handleClick={this.onControlClick} isPlaying={isPlaying} title={this.getVideoTitle()} handlePrev={this.onPrev} hand
+                </div>
+            );
+        }
+    });
+
+    // var PLAYLIST_NAME = 'Playlist de Jamon';
+
+    // var VIDEOS = [
+    //     {id: 1, title: 'jamon de la jamona', owner: 'T remoulade', url:'http://s2.dmcdn.net/D4a0l/210x117-I99.jpg'},
+    //     {id: 3, title: 'jamona tout va', owner: 'dogidog', url: 'http://s1.dmcdn.net/ELFvK/210x117-YVP.jpg'},
+    //     {id: 15, title: 'jamone dans tous les sens', owner: 'The Good Jamonitude', url: 'http://s2.dmcdn.net/EJstt/210x117-UEl.jpg'},
+    //     {id: 1342, title: 'jamoni de riz', owner: 'boulghour', url: 'http://s2.dmcdn.net/EHxsq/210x117-RH0.jpg'},
+    //     {id: 1343434, title: 'jamono', owner: 'boulghour', url: 'http://s2.dmcdn.net/EHxsq/210x117-RH0.jpg'},
+    //     {id: 134, title: 'jamonu kassededi au musee du jambon', owner: 'POTIBOR', url: 'http://s2.dmcdn.net/EHxsq/210x117-RH0.jpg'}
+    // ];
+
+    // var VIDEO_ACTIVE = {
+    //     // id: 15,
+    //     // playing: true,
+    //     // progress: 74
+    // }; // empty object if no active video
+
+    // React.renderComponent(<ControllableVideoTable videos={VIDEOS} videoActive={VIDEO_ACTIVE} playlistName={PLAYLIST_NAME} />, document.getEleme
+
+    </script>
+    </body>
+</html>
